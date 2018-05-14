@@ -31,21 +31,23 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import roslib.message
-import rospy
-import re
 import base64
+import re
 from pprint import pprint
 
+import roslib.message
+import rospy
+
 python_to_ros_type_map = {
-    'bool'    : ['bool'],
-    'int'     : ['int8', 'byte', 'uint8', 'char',
-                 'int16', 'uint16', 'int32', 'uint32',
-                 'int64', 'uint64', 'float32', 'float64'],
-    'float'   : ['float32', 'float64'],
-    'str'     : ['string'],
-    'unicode' : ['string'],
-    'long'    : ['uint64']
+    'bool': ['bool'],
+    'int': [
+        'int8', 'byte', 'uint8', 'char', 'int16', 'uint16', 'int32', 'uint32',
+        'int64', 'uint64', 'float32', 'float64'
+    ],
+    'float': ['float32', 'float64'],
+    'str': ['string'],
+    'unicode': ['string'],
+    'long': ['uint64']
 }
 
 python_primitive_types = [bool, int, long, float]
@@ -53,13 +55,15 @@ python_string_types = [str, unicode]
 python_list_types = [list, tuple]
 
 ros_time_types = ['time', 'duration']
-ros_primitive_types = ['bool', 'byte', 'char', 'int8', 'uint8', 'int16',
-                       'uint16', 'int32', 'uint32', 'int64', 'uint64',
-                       'float32', 'float64', 'string']
+ros_primitive_types = [
+    'bool', 'byte', 'char', 'int8', 'uint8', 'int16', 'uint16', 'int32',
+    'uint32', 'int64', 'uint64', 'float32', 'float64', 'string'
+]
 ros_header_types = ['Header', 'std_msgs/Header', 'roslib/Header']
 ros_binary_types_regexp = re.compile(r'(uint8|char)\[[^\]]*\]')
 
 list_brackets = re.compile(r'\[[^\]]*\]')
+
 
 def convert_dictionary_to_ros_message(message_type, dictionary):
     """
@@ -80,11 +84,12 @@ def convert_dictionary_to_ros_message(message_type, dictionary):
             field_value = _convert_to_ros_type(field_type, field_value)
             setattr(message, field_name, field_value)
         else:
-            error_message = 'ROS message type "{0}" has no field named "{1}"'\
-                .format(message_type, field_name)
-            raise ValueError(error_message)
+            error_message = 'ROS message type "{0}" has no field named "{1}", field not laoded '.format(
+                message_type, field_name)
+            print(error_message)
 
     return message
+
 
 def _convert_to_ros_type(field_type, field_value):
     if is_ros_binary_type(field_type, field_value):
@@ -96,9 +101,11 @@ def _convert_to_ros_type(field_type, field_value):
     elif _is_field_type_an_array(field_type):
         field_value = _convert_to_ros_array(field_type, field_value)
     else:
-        field_value = convert_dictionary_to_ros_message(field_type, field_value)
+        field_value = convert_dictionary_to_ros_message(
+            field_type, field_value)
 
     return field_value
+
 
 def _convert_to_ros_binary(field_type, field_value):
     binary_value_as_string = field_value
@@ -108,6 +115,7 @@ def _convert_to_ros_binary(field_type, field_value):
         binary_value_as_string = str(bytearray(field_value))
 
     return binary_value_as_string
+
 
 def _convert_to_ros_time(field_type, field_value):
     time = None
@@ -126,12 +134,15 @@ def _convert_to_ros_time(field_type, field_value):
 
     return time
 
+
 def _convert_to_ros_primitive(field_type, field_value):
     return field_value
+
 
 def _convert_to_ros_array(field_type, list_value):
     list_type = list_brackets.sub('', field_type)
     return [_convert_to_ros_type(list_type, value) for value in list_value]
+
 
 def convert_ros_message_to_dictionary(message):
     """
@@ -145,9 +156,11 @@ def convert_ros_message_to_dictionary(message):
     message_fields = _get_message_fields(message)
     for field_name, field_type in message_fields:
         field_value = getattr(message, field_name)
-        dictionary[field_name] = _convert_from_ros_type(field_type, field_value)
+        dictionary[field_name] = _convert_from_ros_type(
+            field_type, field_value)
 
     return dictionary
+
 
 def _convert_from_ros_type(field_type, field_value):
     if is_ros_binary_type(field_type, field_value):
@@ -182,26 +195,29 @@ def is_ros_binary_type(field_type, field_value):
     """
     return re.search(ros_binary_types_regexp, field_type) is not None
 
+
 def _convert_from_ros_binary(field_type, field_value):
     field_value = base64.standard_b64encode(field_value)
     return field_value
 
+
 def _convert_from_ros_time(field_type, field_value):
-    field_value = {
-        'secs'  : field_value.secs,
-        'nsecs' : field_value.nsecs
-    }
+    field_value = {'secs': field_value.secs, 'nsecs': field_value.nsecs}
     return field_value
+
 
 def _convert_from_ros_primitive(field_type, field_value):
     return field_value
+
 
 def _convert_from_ros_array(field_type, field_value):
     list_type = list_brackets.sub('', field_type)
     return [_convert_from_ros_type(list_type, value) for value in field_value]
 
+
 def _get_message_fields(message):
     return zip(message.__slots__, message._slot_types)
+
 
 def _is_field_type_an_array(field_type):
     return list_brackets.search(field_type) is not None
