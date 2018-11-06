@@ -75,6 +75,8 @@ def convert_dictionary_to_ros_message(message_type, dictionary):
         ros_message = convert_dictionary_to_ros_message(message_type, dict_message)
     """
     message_class = roslib.message.get_message_class(message_type)
+    if message_class is None:
+        message_class = roslib.message.get_service_class(message_type)
     message = message_class()
     message_fields = dict(_get_message_fields(message))
 
