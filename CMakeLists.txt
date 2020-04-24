@@ -23,4 +23,4 @@ generate_messages(
 catkin_package(CATKIN_DEPENDS message_runtime std_msgs)
 
 # Test launch files
-add_rostest(test/test_all.test)
+# add_rostest(test/test_all.test)
